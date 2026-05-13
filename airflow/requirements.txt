@@ -1,0 +1,4 @@
+requests==2.31.0
+psycopg[binary]==3.3.4
+textblob==0.17.1
+apache-airflow-providers-fab

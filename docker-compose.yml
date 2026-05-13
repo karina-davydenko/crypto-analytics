@@ -1,5 +1,5 @@
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.9.1
+  image: apache/airflow:3.0.2
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -7,8 +7,9 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ""
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    _PIP_ADDITIONAL_REQUIREMENTS: "requests==2.31.0 'psycopg[binary]==3.3.4' textblob==0.17.1 apache-airflow-providers-fab"
     NEWSAPI_KEY: ${NEWSAPI_KEY}
     POSTGRES_HOST: postgres
     POSTGRES_PORT: 5432
@@ -19,6 +20,7 @@ x-airflow-common: &airflow-common
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/requirements.txt:/requirements.txt
   depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
@@ -36,8 +38,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./airflow/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      # 5433 снаружи → 5432 внутри контейнера.
-      # Порт 5432 занят локальным PostgreSQL на Mac — используем 5433 для доступа извне.
       - "5433:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
@@ -49,7 +49,6 @@ services:
   redis:
     image: redis:7.2-bookworm
     expose:
-      # Порт доступен только внутри Docker-сети (не наружу)
       - 6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -66,8 +65,9 @@ services:
       - -c
       - |
         mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
-        # Инициализируем базу данных метаданных Airflow
-        airflow db init
+        # В Airflow 3.x команда db init заменена на db migrate
+        # db migrate создаёт/обновляет таблицы метаданных Airflow в PostgreSQL
+        airflow db migrate
         # Создаём пользователя admin (логин: admin / пароль: admin)
         airflow users create \
           --username admin \
