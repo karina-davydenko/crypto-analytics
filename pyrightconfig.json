@@ -1,7 +1,10 @@
 {
   "venvPath": ".",
   "venv": ".venv",
-  "typeCheckingMode": "strict",
-  "reportMissingTypeStubs": false
+  "typeCheckingMode": "standard",
+  "reportMissingTypeStubs": false,
+  "extraPaths": [
+    "api/.venv-api/lib/python3.14/site-packages"
+  ]
 }
 

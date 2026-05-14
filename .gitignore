@@ -9,4 +9,5 @@ logs/
 airflow/logs/
 dbt/target/
 dbt/.venv-dbt/
+api/.venv-api/
 dbt/dbt_packages/
