@@ -1,0 +1,99 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-hover: #1c2128;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --yellow: #d29922;
+
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 20px 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Typography */
+h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+h2 { font-size: 16px; font-weight: 600; color: var(--text); }
+
+/* Card */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-positive { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+.badge-negative { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+.badge-neutral { background: rgba(139, 148, 158, 0.15); color: var(--text-muted); }
+
+/* Change colors */
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+
+/* Table rows */
+.table-row { transition: background 0.12s; cursor: pointer; }
+.table-row:hover { background: rgba(255,255,255,0.04); }
+.table-row--selected { background: rgba(88,166,255,0.06); }
+.table-row--selected:hover { background: rgba(88,166,255,0.10); }
+
+/* News items */
+.news-item { display: block; transition: background 0.1s; }
+.news-item:hover { background: var(--bg-hover); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-corner { background: var(--bg-card); }
+
+/* Search input */
+.search-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--accent); }
