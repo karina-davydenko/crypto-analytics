@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: gold_coin_daily
+    description: "Дневные агрегаты по каждой монете: цена открытия/закрытия, MA7, MA30, volatility."
+    columns:
+      - name: coin_id
+        tests:
+          - not_null
+      - name: price_date
+        tests:
+          - not_null
+      - name: close_price
+        tests:
+          - not_null
+      - name: ma_7d
+        tests:
+          - not_null
+      - name: ma_30d
+        tests:
+          - not_null
+
+  - name: gold_top_movers
+    description: "Топ 10 монет с наибольшим ростом и падением за 24ч, 7д, 30д."
+    columns:
+      - name: coin_id
+        tests:
+          - not_null
+      - name: period
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['24h', '7d', '30d']
+      - name: mover_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['gainer', 'loser']
+
+  - name: gold_coin_news_correlation
+    description: "Цена + новости + sentiment по монете и дате. LAG для анализа корреляции."
+    columns:
+      - name: coin_id
+        tests:
+          - not_null
+      - name: price_date
+        tests:
+          - not_null
