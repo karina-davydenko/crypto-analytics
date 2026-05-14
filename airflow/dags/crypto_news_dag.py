@@ -5,6 +5,7 @@ from typing import Any, TypedDict, cast
 
 import psycopg
 import requests
+from textblob import TextBlob
 
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
@@ -51,6 +52,27 @@ def _parse_articles(raw: Any) -> list[ArticleData]:
     if not isinstance(raw, list):
         raise ValueError(f"NewsAPI вернул неожиданный формат: {type(raw)}")
     return cast(list[ArticleData], raw)
+
+
+def _compute_sentiment(title: str, description: str) -> tuple[float, str]:
+    # Объединяем заголовок и описание — больше текста = точнее результат.
+    text = f"{title}. {description}".strip(". ")
+
+    # TextBlob анализирует текст и возвращает polarity:
+    # -1.0 = очень негативный ("market crash"), +1.0 = очень позитивный ("all-time high")
+    # Использует встроенный словарь слов — не нужно качать дополнительные данные.
+    polarity: float = round(float(TextBlob(text).sentiment.polarity), 4)
+
+    # Порог ±0.1 отделяет явный позитив/негатив от нейтральных новостей.
+    # Значения близкие к нулю чаще всего — обычные информационные статьи.
+    if polarity > 0.1:
+        label = 'positive'
+    elif polarity < -0.1:
+        label = 'negative'
+    else:
+        label = 'neutral'
+
+    return polarity, label
 
 
 def _find_coin_mentions(title: str, description: str) -> list[str]:
@@ -126,6 +148,10 @@ def fetch_crypto_news() -> None:
                     source_name   = article.get('source', {}).get('name')
                     coin_mentions = _find_coin_mentions(title, description)
 
+                    # Вычисляем тональность новости через TextBlob.
+                    # Передаём и заголовок и описание — больше контекста.
+                    sentiment_score, sentiment_label = _compute_sentiment(title, description)
+
                     # Конвертируем строку ISO 8601 в datetime для PostgreSQL.
                     # NewsAPI возвращает формат: "2024-01-15T10:30:00Z"
                     published_dt: datetime | None = None
@@ -139,9 +165,10 @@ def fetch_crypto_news() -> None:
                     # Это важно: если DAG запустится дважды, данные не задублируются.
                     cursor.execute("""
                         INSERT INTO raw_news
-                            (title, description, url, source, published_at, coin_mentions)
+                            (title, description, url, source, published_at,
+                             coin_mentions, sentiment_score, sentiment_label)
                         VALUES
-                            (%s, %s, %s, %s, %s, %s)
+                            (%s, %s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (url) DO NOTHING
                     """, (
                         title,
@@ -150,6 +177,8 @@ def fetch_crypto_news() -> None:
                         source_name,
                         published_dt,
                         coin_mentions if coin_mentions else None,
+                        sentiment_score,
+                        sentiment_label,
                     ))
 
                     saved_count += 1

@@ -58,7 +58,14 @@ CREATE TABLE IF NOT EXISTS raw_news (
     coin_mentions   TEXT[],
 
     -- Время когда мы скачали эту новость с NewsAPI
-    fetched_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    fetched_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Тональность новости — вычисляется Airflow DAG через TextBlob.
+    -- Значение от -1.0 (очень негативная) до +1.0 (очень позитивная).
+    sentiment_score NUMERIC(5, 4),
+
+    -- Текстовая метка тональности: 'positive', 'negative', 'neutral'
+    sentiment_label VARCHAR(10)
 );
 
 CREATE INDEX IF NOT EXISTS idx_raw_news_published_at ON raw_news (published_at);
