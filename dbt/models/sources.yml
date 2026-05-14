@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: public
+    description: "Сырые данные загруженные Airflow DAG-ами"
+    database: crypto_analytics
+    schema: public
+    tables:
+      - name: raw_prices
+        description: "Цены топ-50 монет с CoinGecko, обновляется каждый час"
+        columns:
+          - name: id
+            description: "Автоинкрементный первичный ключ"
+          - name: coin_id
+            description: "Внутренний ID монеты в CoinGecko (например 'bitcoin')"
+          - name: coin_name
+            description: "Полное название монеты (например 'Bitcoin')"
+          - name: symbol
+            description: "Тикер монеты в верхнем регистре (например 'BTC')"
+          - name: price_usd
+            description: "Текущая цена в долларах США"
+          - name: market_cap
+            description: "Рыночная капитализация в долларах"
+          - name: volume_24h
+            description: "Объём торгов за последние 24 часа"
+          - name: price_change_24h
+            description: "Изменение цены за 24 часа в процентах"
+          - name: fetched_at
+            description: "Время когда DAG получил эти данные с API"
+
+      - name: raw_news
+        description: "Крипто-новости с NewsAPI, обновляется каждые 6 часов"
+        columns:
+          - name: id
+            description: "Автоинкрементный первичный ключ"
+          - name: title
+            description: "Заголовок новости"
+          - name: description
+            description: "Краткое описание новости"
+          - name: url
+            description: "Ссылка на оригинальную статью (уникальный ключ)"
+          - name: source
+            description: "Название источника (например 'CoinDesk')"
+          - name: published_at
+            description: "Время публикации новости"
+          - name: coin_mentions
+            description: "Массив монет упомянутых в новости (например ['bitcoin', 'ethereum'])"
+          - name: fetched_at
+            description: "Время когда DAG скачал эту новость"

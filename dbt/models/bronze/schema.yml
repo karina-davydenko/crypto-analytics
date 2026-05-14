@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: bronze_prices
+    description: "Бронзовый слой цен. VIEW поверх raw_prices — без трансформаций, только зеркало."
+    columns:
+      - name: id
+        description: "Первичный ключ"
+        tests:
+          - not_null
+          - unique
+      - name: coin_id
+        description: "ID монеты в CoinGecko"
+        tests:
+          - not_null
+      - name: price_usd
+        description: "Цена в долларах"
+      - name: fetched_at
+        description: "Время получения данных"
+        tests:
+          - not_null
+
+  - name: bronze_news
+    description: "Бронзовый слой новостей. VIEW поверх raw_news — без трансформаций."
+    columns:
+      - name: id
+        description: "Первичный ключ"
+        tests:
+          - not_null
+          - unique
+      - name: url
+        description: "URL статьи — уникальный ключ"
+        tests:
+          - not_null
+          - unique
+      - name: title
+        description: "Заголовок новости"
+        tests:
+          - not_null
