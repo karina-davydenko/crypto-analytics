@@ -91,25 +91,11 @@ daily_agg as (
     where rn = 1
 ),
 
-final as (
+with_windows as (
     select
-        coin_id,
-        coin_name,
-        symbol,
-        price_date,
-        open_price,
-        close_price,
-        high_price,
-        low_price,
-        daily_change_pct,
-        volatility_score,
-        avg_volume,
-        avg_market_cap,
-
+        *,
         -- Скользящее среднее за 7 дней (MA7).
-        -- AVG(...) OVER (...) — оконная функция, не группирует строки, а считает по окну.
         -- ROWS BETWEEN 6 PRECEDING AND CURRENT ROW = текущий день + 6 предыдущих = 7 дней.
-        -- Сортировка по дате гарантирует правильный порядок.
         round(
             avg(close_price) over (
                 partition by coin_id
@@ -129,19 +115,41 @@ final as (
             8
         ) as ma_30d,
 
-        -- Процентное изменение цены закрытия относительно предыдущего дня.
+        -- Цена закрытия предыдущего дня — выносим в отдельное поле
+        -- чтобы не вычислять LAG дважды в одном выражении.
+        lag(close_price, 1) over (
+            partition by coin_id
+            order by price_date asc
+        ) as prev_close_price
+
+    from daily_agg
+),
+
+final as (
+    select
+        coin_id,
+        coin_name,
+        symbol,
+        price_date,
+        open_price,
+        close_price,
+        high_price,
+        low_price,
+        daily_change_pct,
+        volatility_score,
+        avg_volume,
+        avg_market_cap,
+        ma_7d,
+        ma_30d,
+
+        -- Процентное изменение относительно предыдущего дня.
+        -- prev_close_price вычислен один раз в with_windows.
         round(
-            (close_price - lag(close_price, 1) over (
-                partition by coin_id
-                order by price_date asc
-            )) / nullif(lag(close_price, 1) over (
-                partition by coin_id
-                order by price_date asc
-            ), 0) * 100,
+            (close_price - prev_close_price) / nullif(prev_close_price, 0) * 100,
             2
         ) as price_change_vs_prev_day
 
-    from daily_agg
+    from with_windows
 )
 
 select * from final

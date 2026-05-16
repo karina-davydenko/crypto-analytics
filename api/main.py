@@ -151,7 +151,13 @@ def get_top_losers(
 
 
 @app.get("/health")
-def health_check(cur: Cursor) -> dict[str, str]:
-    """Проверяет что API и соединение с БД работают."""
+def health_check() -> dict[str, str]:
+    """Базовая проверка что API запущен."""
+    return {"status": "ok"}
+
+
+@app.get("/health/db")
+def health_check_db(cur: Cursor) -> dict[str, str]:
+    """Проверяет соединение с базой данных."""
     cur.execute("SELECT 1")
     return {"status": "ok", "database": "connected"}

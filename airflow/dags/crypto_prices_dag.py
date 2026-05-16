@@ -1,5 +1,4 @@
 import logging
-import os
 from datetime import datetime, timedelta
 from typing import Any, TypedDict, cast
 
@@ -9,8 +8,11 @@ import requests
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 
+from db_utils import get_connection
+
 
 logger = logging.getLogger(__name__)
+
 
 class CoinData(TypedDict, total=False):
     id:                             str
@@ -21,13 +23,6 @@ class CoinData(TypedDict, total=False):
     total_volume:                   int | None
     price_change_percentage_24h:    float | None
 
-def _build_conninfo() -> str:
-    host     = os.getenv('POSTGRES_HOST', 'postgres')
-    port     = os.getenv('POSTGRES_PORT', '5432')
-    dbname   = os.getenv('POSTGRES_DB', 'crypto_analytics')
-    user     = os.getenv('POSTGRES_USER', 'airflow')
-    password = os.getenv('POSTGRES_PASSWORD', 'airflow')
-    return f"host={host} port={port} dbname={dbname} user={user} password={password}"
 
 COINGECKO_URL = (
     "https://api.coingecko.com/api/v3/coins/markets"
@@ -64,7 +59,7 @@ def fetch_crypto_prices() -> None:
         raise
 
     try:
-        with psycopg.connect(_build_conninfo()) as conn:
+        with get_connection() as conn:
             with conn.cursor() as cursor:
                 logger.info("Подключились к PostgreSQL, начинаем запись данных")
 
@@ -78,11 +73,15 @@ def fetch_crypto_prices() -> None:
                         logger.warning(f"Пропускаем монету без ID или названия: {coin}")
                         continue
 
+                    # ON CONFLICT DO NOTHING защищает от дублей при повторном запуске DAG.
+                    # Уникальность определяется парой (coin_id, fetched_at) — два запуска
+                    # в одну секунду не должны случиться, но лучше перестраховаться.
                     cursor.execute("""
                         INSERT INTO raw_prices
                             (coin_id, coin_name, symbol, price_usd, market_cap, volume_24h, price_change_24h)
                         VALUES
                             (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT DO NOTHING
                     """, (
                         coin_id,
                         coin_name,
@@ -93,7 +92,8 @@ def fetch_crypto_prices() -> None:
                         coin.get('price_change_percentage_24h'),
                     ))
 
-                    saved_count += 1
+                    if cursor.rowcount > 0:
+                        saved_count += 1
 
                 logger.info(f"Успешно сохранено {saved_count} монет в raw_prices")
 
